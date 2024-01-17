@@ -7,7 +7,7 @@
 [zyBLOG](https://github.com/Athenavi/zyBLOG) 是一个基于 Python Flask 和 WSGI 的简易博客程序
 
 （以下demo网址非最新特性）
-demo https://237127.xyz
+demo https://lite.237127.xyz
 ## 功能特点
 
 <details>
