@@ -1,1 +1,1 @@
-新版本 隐藏文章
+支持vercel fork此项目到您的仓库，并且修改配置config.ini
