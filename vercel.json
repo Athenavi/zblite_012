@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "vercel.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/vercel.py"
+    }
+  ],
+  "env": {
+    "DOMAIN": "<your_blog_domain>",
+    "BLOG_TITLE": "<your_blog_title>"
+  }
+}
