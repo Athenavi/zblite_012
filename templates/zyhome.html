@@ -45,13 +45,13 @@
       <!-- Slides -->
       <div class="carousel-inner">
         <div class="carousel-item active">
-          <img src="https://qks.icu/api/file/rand?name=imgs.txt&1" alt="Image 1">
+          <img src="https://picsum.photos/560/270?1" alt="Image 1">
         </div>
         <div class="carousel-item">
-          <img src="https://qks.icu/api/file/rand?name=imgs.txt&2" alt="Image 2">
+          <img src="https://picsum.photos/560/270?2" alt="Image 2">
         </div>
         <div class="carousel-item">
-          <img src="https://qks.icu/api/file/rand?name=imgs.txt&3" alt="Image 3">
+          <img src="https://picsum.photos/560/270?3" alt="Image 3">
         </div>
       </div>
 
@@ -86,10 +86,10 @@
                                 {% set i = range(1000)|random %}
                                 {% if loop.index is even %}
                                 <h3 class="card-title">&nbsp;&nbsp;&nbsp;&nbsp;{{ article }}</h3>
-                                <img src="https://qks.icu/api/file/rand?name=imgs.txt&{{ article }}"
+                                <img src="https://picsum.photos/300/200?{{ article }}"
                                     alt="{{ article }}">
                                 {% else %}
-                                <img src="https://qks.icu/api/file/rand?name=imgs.txt&{{ article }}"
+                                <img src="https://picsum.photos/300/200?{{ article }}"
                                     alt="{{ article }}">
                                 <h3 class="card-title">&nbsp;&nbsp;&nbsp;&nbsp;{{ article }}</h3>
                                 {% endif %}
@@ -116,7 +116,7 @@
                 {% endfor %}
                 <hr>
                  <span style="margin-right: 5px;">Ctrl + F 搜索内容</span>
-                                <img src="https://7trees.cn/wp-content/uploads/2023/08/348f5b9acc0605ea443058826975a8a1.png"
+                                <img src="https://7trees.cn/zyImg/test/公众号.png"
                     alt="Weather Image" style="height: 95px;">
                 <hr>
                <a href="/travel"><img id="goPost" src="../static/image/blackhole.svg" style="border: none; background-color: transparent; height: 28px" alt=""/>随机一篇文章</a><br>
