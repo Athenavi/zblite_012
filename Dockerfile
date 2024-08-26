@@ -15,8 +15,10 @@ COPY . /app
 EXPOSE 9876
 
 # 设置环境变量
-ENV DOMAIN=''
-ENV BLOG_TITLE=''
+# 注意DOMAIN格式,以斜杠结尾
+# BLOG_TITLE(您的网站名称)
+ENV DOMAIN='http://127.0.0.1:9876/'
+ENV BLOG_TITLE='七棵树'
 ENV PORT=9876
 
 # 定义启动命令
