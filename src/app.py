@@ -39,9 +39,6 @@ app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 
 # 新增日志处理程序
 log_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
-file_handler = logging.FileHandler('app.log', encoding=global_encoding)
-file_handler.setFormatter(log_formatter)
-app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 # 应用分享配置参数
 domain = os.environ.get('DOMAIN', 'http://127.0.0.1:80/')
