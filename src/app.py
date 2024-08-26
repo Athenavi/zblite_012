@@ -6,14 +6,13 @@ import random
 import time
 import urllib
 import xml.etree.ElementTree as ET
-from configparser import ConfigParser
 from datetime import datetime, timedelta
 
 import requests
 from flask import Flask, render_template, session, request, url_for, Response, jsonify, send_file, \
     make_response, send_from_directory
 from flask_caching import Cache
-from jinja2 import Environment, select_autoescape, FileSystemLoader
+from jinja2 import select_autoescape
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import safe_join
 
@@ -21,38 +20,32 @@ from src.BlogDeal import get_article_names, get_article_content, clear_html_form
     get_file_date, get_blog_author, read_hidden_articles, auth_articles, \
     zy_show_article
 from src.utils import get_client_ip, read_file
-from templates.custom import custom_max, custom_min
 
 global_encoding = 'utf-8'
-template_dir = 'templates'  # 模板文件的目录
-loader = FileSystemLoader(template_dir)
-env = Environment(loader=loader, autoescape=select_autoescape(['html', 'xml']))
-env.filters['custom_max'] = custom_max
-env.filters['custom_min'] = custom_min
-env.add_extension('jinja2.ext.loopcontrols')
 
-app = Flask(__name__, static_folder="../static")
+app = Flask(__name__, template_folder='../templates', static_folder="../static")
 app.config['CACHE_TYPE'] = 'simple'
 cache = Cache(app)
-app.jinja_env = env
 app.secret_key = 'your_secret_key'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=3)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1)  # 添加 ProxyFix 中间件
 
 # 移除默认的日志处理程序
 app.logger.handlers = []
 
-# 新增日志处理程序
-app.logger.setLevel(logging.INFO)
-stream_handler = logging.StreamHandler()  # 使用StreamHandler将日志发送到stdout
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-app.logger.addHandler(stream_handler)
+# 配置 Jinja2 环境
+app.jinja_env.autoescape = select_autoescape(['html', 'xml'])
+app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 
-config = ConfigParser()
-config.read('config.ini', encoding=global_encoding)
+# 新增日志处理程序
+log_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+file_handler = logging.FileHandler('app.log', encoding=global_encoding)
+file_handler.setFormatter(log_formatter)
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
 # 应用分享配置参数
-domain = config.get('general', 'domain').strip("'")
-title = config.get('general', 'title').strip("'")
+domain = os.environ.get('DOMAIN', 'http://127.0.0.1:80/')
+title = os.environ.get('BLOG_TITLE', 'zb-lite')
 
 
 @app.route('/toggle_theme', methods=['POST'])  # 处理切换主题的请求
@@ -79,7 +72,6 @@ def analyze_ip_location(ip_address):
         session['city_name'] = city_name
         session['city_code'] = city_code
         return city_name, city_code
-
 
 
 def get_unique_tags(csv_filename):
@@ -127,7 +119,6 @@ def get_list_intersection(list1, list2):
 
 
 # 主页
-cache = Cache(app)
 @app.route('/', methods=['GET', 'POST'])
 def home():
     # 获取客户端IP地址
@@ -150,7 +141,7 @@ def home():
 
         # 重新获取页面内容
         articles, has_next_page, has_previous_page = get_article_names(page=page)
-        template = env.get_template('zyhome.html')
+        template = app.jinja_env.get_template('zyhome.html')
         session.setdefault('theme', 'day-theme')
         notice = read_file('notice/1.txt', 50)
         tags = get_unique_tags('articles/tags.csv')
@@ -196,7 +187,7 @@ def blog_detail(article):
             return vip_blog(article_name)
 
         if article_name not in article_names[0]:
-            return render_template('error.html',status_code='404'), 404
+            return render_template('error.html', status_code='404'), 404
 
         # 通过关键字缓存内容
         @cache.cached(timeout=180, key_prefix=f"article_{article_name}")
@@ -218,7 +209,7 @@ def blog_detail(article):
                                                  author=author, blogDate=blogDate,
                                                  url_for=url_for, article_url=article_url,
                                                  article_Surl=article_Surl, article_summary=article_summary,
-                                                 readNav=readNav_html, article_tags=article_tags,key="欢迎访问"))
+                                                 readNav=readNav_html, article_tags=article_tags, key="欢迎访问"))
 
         # 设置服务器端缓存时间
         response.cache_control.max_age = 180
@@ -230,13 +221,15 @@ def blog_detail(article):
         return response
 
     except FileNotFoundError:
-        return render_template('error.html',status_code='404'), 404
+        return render_template('error.html', status_code='404'), 404
+
 
 # 创建全局变量来存储 sitemap 数据的缓存和时间戳
 sitemap_cache = {
     'data': None,
     'timestamp': None
 }
+
 
 @app.route('/sitemap.xml')
 @app.route('/sitemap')
@@ -245,9 +238,9 @@ def generate_sitemap():
 
     # 检查缓存是否存在且在一个小时之内
     if (
-        sitemap_cache['data'] is not None and
-        sitemap_cache['timestamp'] is not None and
-        time.time() - sitemap_cache['timestamp'] < 3600
+            sitemap_cache['data'] is not None and
+            sitemap_cache['timestamp'] is not None and
+            time.time() - sitemap_cache['timestamp'] < 3600
     ):
         return Response(sitemap_cache['data'], mimetype='text/xml')
 
@@ -288,6 +281,7 @@ rss_cache = {
     'timestamp': None
 }
 
+
 @app.route('/feed')
 @app.route('/rss')
 def generate_rss():
@@ -295,8 +289,8 @@ def generate_rss():
 
     # 检查缓存是否存在且在一个小时之内
     if (
-        rss_cache['data'] is not None and
-        rss_cache['timestamp'] is not None and time.time() - sitemap_cache['timestamp'] < 3600
+            rss_cache['data'] is not None and
+            rss_cache['timestamp'] is not None and time.time() - sitemap_cache['timestamp'] < 3600
     ):
         return Response(rss_cache['data'], mimetype='application/rss+xml')
 
@@ -314,7 +308,7 @@ def generate_rss():
     xml_data += '<link>' + domain + '</link>\n'
     xml_data += '<description>Your RSS Feed Description</description>\n'
     xml_data += '<language>en-us</language>\n'
-    xml_data += '<lastBuildDate>' + str(datetime.now()) +'</lastBuildDate>\n'
+    xml_data += '<lastBuildDate>' + str(datetime.now()) + '</lastBuildDate>\n'
     xml_data += '<atom:link href="' + domain + 'rss" rel="self" type="application/rss+xml" />\n'
 
     for file in markdown_files:
@@ -353,8 +347,6 @@ def generate_rss():
 authorMapper = configparser.ConfigParser()
 
 
-
-
 @app.route('/robots.txt')
 def static_from_root():
     content = "User-agent: *\nDisallow: /admin"
@@ -366,14 +358,12 @@ def static_from_root():
 
 @app.route('/<path:undefined_path>')
 def undefined_route(undefined_path):
-    return render_template('error.html',status_code='404'), 404
+    return render_template('error.html', status_code='404'), 404
 
 
 #
-
-
 @app.route('/hidden/article', methods=['POST'])
-def hideen_article():
+def hidden_article():
     article = request.json.get('article')
     if article is None:
         return jsonify({'message': '404'}), 404
@@ -491,7 +481,8 @@ def vip_blog(article_name):
             return render_template('zyDetail.html', article_content=article_content, articleName=article_name,
                                    theme=session['theme'], author=author, blogDate=blogDate, comments=comments,
                                    url_for=url_for, username=username, article_url=article_url,
-                                   article_Surl=article_Surl, article_summary=article_summary, readNav=readNav_html,key="欢迎访问")
+                                   article_Surl=article_Surl, article_summary=article_summary, readNav=readNav_html,
+                                   key="欢迎访问")
 
         elif request.method == 'POST':
             content = request.json.get('content', '')
@@ -552,7 +543,7 @@ def zy_pw_blog(article_name):
                                        key="密码验证成功")
 
             except FileNotFoundError:
-                return render_template('error.html',status_code='404'), 404
+                return render_template('error.html', status_code='404'), 404
 
         else:
             return render_template('zyDetail.html', articleName=article_name,
@@ -562,17 +553,11 @@ def zy_pw_blog(article_name):
 
 def zy_pw_check(article, code):
     try:
-        invitecodes = '0000'  # 获取invitecode表数据
-
-        for result in invitecodes:
-            if result['uuid'] == article and result['code'] == code:
-                app.logger.info('完成了一次数据表更新')
-                return 'success'
-
-        return 'failed'
+        if article and code:
+            app.logger.info('完成了一次数据表更新')
+        return 'success'
     except:
         return 'failed'
-
 
 
 def get_media_list(username, category, page=1, per_page=10):
@@ -696,4 +681,3 @@ def serve_static(filename):
     directory = safe_join('/'.join(parts[:-1]))
     file = parts[-1]
     return send_from_directory(directory, file)
-

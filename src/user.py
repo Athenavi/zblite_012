@@ -1,15 +1,8 @@
 import os
-from configparser import ConfigParser
-
 from flask import render_template
-
-config = ConfigParser()
-config.read('config.ini', encoding='utf-8')
-
 
 def error(message, status_code):
     return render_template('error.html', error=message, status_code=status_code), status_code
-
 
 def read_hidden_articles():
     hidden_articles = []
@@ -17,14 +10,11 @@ def read_hidden_articles():
         hidden_articles = hidden_file.read().splitlines()
     return hidden_articles
 
-
-
 def show_files(path):
     # 指定目录的路径
     directory = path
     files = os.listdir(directory)
     return files
-
 
 def zy_delete_file(filename):
     # 指定目录的路径
